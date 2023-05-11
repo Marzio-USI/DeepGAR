@@ -108,9 +108,9 @@ class DeepGAR(BaseModelDeepGar):
         for i in range(seq_length_y):
             mu = mu * torch.squeeze(scale, 1)
             sigma = sigma * torch.squeeze(scale, 1) / torch.sqrt(torch.squeeze(scale, 1))
-            m = self.distribution.generate_dist(mu, sigma)
-            #TODO: fix this with monte carlo sampling
-            mu = m.sample()
+            # m = self.distribution.generate_dist(mu, sigma)
+            # #TODO: fix this with monte carlo sampling
+            # mu = m.sample()
             sigmas.append(sigma)
             all_mu.append(mu)
 
