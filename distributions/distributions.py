@@ -1,4 +1,6 @@
 import warnings
+from typing import Any
+
 import torch
 
 
@@ -6,7 +8,7 @@ class Distribution:
     def __init__(self):
         pass
 
-    def generate_dist(self, mu, sigma):
+    def generate_dist(self, mu, sigma) -> Any:
         pass
 
     def simple_sample(self, mu, sigma):

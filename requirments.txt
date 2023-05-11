@@ -8,4 +8,6 @@ torch-sparse
 torch-cluster
 torch-spline-conv
 scikit-learn
+matplotlib
+git+https://github.com/pyg-team/pytorch_geometric.git
 git+https://github.com/TorchSpatiotemporal/tsl.git

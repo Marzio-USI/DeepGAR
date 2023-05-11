@@ -30,5 +30,5 @@ class NLL(nn.Module):
 
     def forward(self, mu, sigma, target):
         dist = self.distribution.generate_dist(mu, sigma)
-        likelihood = dist.distribution.log_prob(target)
+        likelihood = dist.log_prob(target)
         return -torch.mean(likelihood)
