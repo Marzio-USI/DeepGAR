@@ -1,0 +1,11 @@
+pandas
+numpy
+torch
+torchvision
+torchaudio
+torch-scatter
+torch-sparse
+torch-cluster
+torch-spline-conv
+scikit-learn
+git+https://github.com/TorchSpatiotemporal/tsl.git
