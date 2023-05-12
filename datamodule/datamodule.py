@@ -14,14 +14,16 @@ from torch.utils.data.dataloader import DataLoader
 from copy import deepcopy
 from torch.utils.data import BatchSampler
 from tsl.typing import SparseTensArray, DataArray, TensArray, IndexSlice, TemporalIndex
-
+from tsl.datasets.elergone import Elergone
 from utils import pre_scaling
-
-
+from tsl.datasets.prototypes import DatetimeDataset
+import tsl
+import os
+import pandas as pd
 class DataModule:
-    def __init__(self, name, train_val_test_split: tuple[float, float, float] | None):
+    def __init__(self, name, train_val_test_split: tuple[float, float, float] | None, batch_size:int=32):
         if name == 'electric':
-            self.dataset = ElectricityBenchmark(root='./data')
+            self.dataset =HourlyElergone(root='./data')
         elif name == 'exchange':
             self.dataset = ExchangeBenchmark(root='./data')
         else:
@@ -36,6 +38,8 @@ class DataModule:
             self.val_size = 0.15
             self.test_size = 0.15
 
+        self.batch_size = batch_size
+        self.name = name
         self.train_dataset = None
         self.test_dataset = None
         self.val_dataset = None
@@ -49,11 +53,21 @@ class DataModule:
             knn=4,
             layout="edge_index")
         dataframe = self.dataset.dataframe()
-        train_df, test_df = train_test_split(dataframe, test_size=self.test_size, shuffle=False)
-        mask_train, mask_test = self.dataset.mask[:train_df.shape[0], ...], self.dataset.mask[train_df.shape[0]:, ...]
-        self.val_size /= self.train_size
-        train_df, val_df = train_test_split(train_df, test_size=self.val_size, shuffle=False)
-        mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
+        if self.name == 'electric':
+            testing_part = 7 * 24
+            train_df = dataframe.iloc[:-testing_part]
+            mask_train = self.dataset.mask[:-testing_part]
+            test_df = dataframe.iloc[-testing_part:]
+            mask_test = self.dataset.mask[-testing_part:]
+            assert test_df.shape[0] == testing_part
+            train_df, val_df = train_test_split(train_df, test_size=0.1, shuffle=False)
+            mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
+        else:
+            train_df, test_df = train_test_split(dataframe, test_size=self.test_size, shuffle=False)
+            mask_train, mask_test = self.dataset.mask[:train_df.shape[0], ...], self.dataset.mask[train_df.shape[0]:, ...]
+            self.val_size /= self.train_size
+            train_df, val_df = train_test_split(train_df, test_size=self.val_size, shuffle=False)
+            mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
 
         assert dataframe.shape[0] == (train_df.shape[0] + val_df.shape[0] + test_df.shape[0]), f'Splitting failed'
 
@@ -92,13 +106,13 @@ class DataModule:
             dataset=self.train_dataset,
             scalers=None,
             splitter=None,
-            batch_size=32,
+            batch_size=self.batch_size,
             workers=8,
         )
         dm.setup()
         scal = self.get_weights()
         sampler = WeightedSampler(scal)
-        train = dm.get_dataloader_train(shuffle=False, batch_size=32, sampler=sampler)
+        train = dm.get_dataloader_train(shuffle=False, batch_size=self.batch_size, sampler=sampler)
         return train
 
     def get_val_data_loader(self):
@@ -106,11 +120,11 @@ class DataModule:
             dataset=self.val_dataset,
             scalers=None,
             splitter=None,
-            batch_size=32,
+            batch_size=self.batch_size,
             workers=8,
         )
         dm.setup()
-        return dm.get_dataloader(None, shuffle=False, batch_size=32)
+        return dm.get_dataloader(None, shuffle=False, batch_size=self.batch_size)
 
     def get_testing_data_loader(self):
         dm_test = SpatioTemporalDataModule(
@@ -185,7 +199,7 @@ class CustomSpatioTemporalDataModule(SpatioTemporalDataModule):
                              "'train', 'val', or 'test'.")
         if dataset is None:
             return None
-        pin_memory = self.pin_memory if split == 'train' else None
+        # pin_memory = self.pin_memory if split == 'train' else None
         return CustomStaticGraphLoader(dataset,
                                        batch_size=batch_size or self.batch_size,
                                        shuffle=shuffle,
@@ -256,3 +270,40 @@ class CustomStaticGraphLoader(DataLoader):
     @property
     def _index_sampler(self):
         return self.batch_sampler
+
+
+class HourlyElergone(Elergone):
+    def __init__(self, root=None, freq=None):
+        super().__init__(root, freq)
+
+    def build(self):
+        # Build dataset
+        print('ehi')
+        self.download()
+        tsl.logger.info("Building the electricity dataset...")
+        path = os.path.join(self.root_dir, 'LD2011_2014.csv')
+        df = pd.read_csv(path,
+                         sep=';',
+                         index_col=0,
+                         parse_dates=True,
+                         decimal=',')
+
+        # Preprocess df
+        start_date = pd.to_datetime('2014-01-01')
+        end_date = pd.to_datetime('2014-09-02') + pd.Timedelta(days=7)
+        df = df.loc[start_date:end_date]
+        df = df.iloc[:-1]
+        # Only include data starting from 2014-01-01
+        df = df.resample('H').sum()  # Convert data frequency to hourly by summing
+
+        df.index.freq = df.index.inferred_freq
+        path = os.path.join(self.root_dir, 'elergone.h5')
+        df.to_hdf(path, key='raw')
+        self.clean_downloads()
+        return df
+
+    def load_raw(self) -> pd.DataFrame:
+        self.build()
+        df = pd.read_hdf(self.required_files_paths[0])
+        return df
+

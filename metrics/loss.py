@@ -20,6 +20,16 @@ class RMSE_paper(nn.Module):
         return nom / torch.mean(torch.abs(target))
 
 
+class ND_paper(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, pred, target):
+        a = torch.sum(torch.abs(target - pred))
+        b = torch.sum(torch.abs(target))
+        return a / b
+
+
 class MAE(nn.Module):
     def __init__(self):
         super(MAE, self).__init__()

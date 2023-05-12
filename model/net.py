@@ -58,4 +58,4 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
         pass
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=5e-4)
+        return torch.optim.Adam(self.parameters())
