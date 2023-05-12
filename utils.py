@@ -11,6 +11,11 @@ def scaling(x):
     sum_features = torch.sum(x, dim=1, keepdim=True)
     return (1.0 + sum_features / seq_length).detach()
 
+def pre_scaling(x):
+    # x has shape [batch, seq_length, num_nodes, feature dim]
+    seq_length = x.shape[1]
+    sum_features = torch.sum(x, dim=0, keepdim=True)
+    return (1.0 + sum_features / seq_length).flatten().detach()
 
 def print_model_size(model):
     tot = sum([p.numel() for p in model.parameters() if p.requires_grad])
@@ -52,17 +57,22 @@ def rmse(y_true, y_pred):
 
 def nrmse(y_true, y_pred):
     return np.sqrt(np.mean((y_true - y_pred)**2)) / (np.max(y_true) - np.min(y_true))
+
+def rmse_paper(y_true, y_pred):
+    nom = np.sqrt(np.mean(y_true-y_pred)**2)
+    return nom / np.mean(np.abs(y_true))
 def draw(res):
     mus, sigmas, ys = decompose_results(res)
     n_plot = mus.shape[1]
     for i in range(n_plot):
         fig = plt.figure(i, figsize=(16, 8))
-        rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
-        nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
+        # rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
+        # nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
+        rmse_p = rmse_paper(ys[:, i, :].flatten(), mus[:, i, :].flatten())
         plt.plot(mus[:, i, :].flatten(), label='Predicted values')
         plt.plot(ys[:, i, :].flatten(), label='real values')
         plt.legend()
-        plt.title(f'Prediction vs real value for time series {i}   RMSE {rmse_loss} and NRMSE {nrmse_loss}')
+        plt.title(f'Prediction vs real value for time series {i}  RMSE (paper): {rmse_p}')
         plt.show()
 
     return
@@ -71,12 +81,13 @@ def draw_single(res, i):
     mus, sigmas, ys = decompose_results(res)
     n_plot = mus.shape[1]
     fig = plt.figure(i, figsize=(16, 8))
-    rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
-    nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
+    # rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
+    # nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
+    rmse_p = rmse_paper(ys[:, i, :].flatten(), mus[:, i, :].flatten())
     plt.plot(mus[:, i, :].flatten(), label='Predicted values')
     plt.plot(ys[:, i, :].flatten(), label='real values')
     plt.legend()
-    plt.title(f'Prediction vs real value for time series {i}   RMSE {rmse_loss} and NRMSE {nrmse_loss}')
+    plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p}')
     plt.show()
 
     return

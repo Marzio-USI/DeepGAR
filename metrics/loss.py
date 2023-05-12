@@ -10,6 +10,15 @@ class RMSE(nn.Module):
     def forward(self, pred, target):
         return torch.sqrt(torch.mean((pred - target) ** 2))
 
+class RMSE_paper(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, pred, target):
+        # pred and target have shape (8, 1)
+        nom = torch.sqrt(torch.mean((pred - target) ** 2))
+        return nom / torch.mean(torch.abs(target))
+
 
 class MAE(nn.Module):
     def __init__(self):

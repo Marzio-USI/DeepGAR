@@ -3,7 +3,8 @@ from typing import Any
 import torch
 
 from distributions.distributions import Distribution
-from layers_fixed.our_layers import DenseGraphConvLSTMCell
+from tsl.nn.layers.recurrent.gcrnn import GraphConvLSTMCell as DenseGraphConvLSTMCell
+# from layers_fixed.our_layers import DenseGraphConvLSTMCell
 from model.net import BaseModelDeepGar
 import torch.nn as nn
 from tsl.nn.layers import NodeEmbedding
@@ -15,7 +16,7 @@ class DeepGAR(BaseModelDeepGar):
     def __init__(self, input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
-                 test_loss: str = "rmse",
+                 test_loss: str = "rmse_p",
                  perform_scaling: bool = False,
                  encoder_size=32,
                  embedding_size=32,

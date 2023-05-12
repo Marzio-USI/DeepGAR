@@ -26,7 +26,8 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
         elif test_loss == 'mae':
             self.test_loss_fn = MAE()
         else:
-            raise NotImplementedError(f'test loss function {test_loss} not implemented, choose from "rmse" or "mae"')
+            print('using default rmse used in deep ar')
+            self.test_loss_fn = RMSE_paper()
 
         self.distribution_sigma = nn.Softplus()
 
