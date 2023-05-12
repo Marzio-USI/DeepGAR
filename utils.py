@@ -64,8 +64,8 @@ def decompose_results(res: list):
 
 def get_metrics(res):
     mus, sigmas, ys = decompose_results(res)
-    ys = ys.squeeze(dim=0)
-    mus = mus.squeeze(dim=0)
+    ys = ys.squeeze(axis=0)
+    mus = mus.squeeze(axis=0)
     assert ys.ndim == 2
     assert mus.ndim == 2
     rmse_loss = rmse_paper(ys, mus)

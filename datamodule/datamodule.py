@@ -275,35 +275,19 @@ class CustomStaticGraphLoader(DataLoader):
 class HourlyElergone(Elergone):
     def __init__(self, root=None, freq=None):
         super().__init__(root, freq)
-
-    def build(self):
-        # Build dataset
-        print('ehi')
-        self.download()
-        tsl.logger.info("Building the electricity dataset...")
-        path = os.path.join(self.root_dir, 'LD2011_2014.csv')
-        df = pd.read_csv(path,
-                         sep=';',
-                         index_col=0,
-                         parse_dates=True,
-                         decimal=',')
-
-        # Preprocess df
+    
+    def load(self):
+        df = self.load_raw()
+        tsl.logger.info('Loaded raw dataset.')
+        df /= 4.  # kW -> kWh
+        df = df[~df.index.duplicated(keep='first')]
         start_date = pd.to_datetime('2014-01-01')
         end_date = pd.to_datetime('2014-09-02') + pd.Timedelta(days=7)
         df = df.loc[start_date:end_date]
-        df = df.iloc[:-1]
         # Only include data starting from 2014-01-01
         df = df.resample('H').sum()  # Convert data frequency to hourly by summing
-
-        df.index.freq = df.index.inferred_freq
-        path = os.path.join(self.root_dir, 'elergone.h5')
-        df.to_hdf(path, key='raw')
-        self.clean_downloads()
-        return df
-
-    def load_raw(self) -> pd.DataFrame:
-        self.build()
-        df = pd.read_hdf(self.required_files_paths[0])
-        return df
+        # drop duplicates
+        df = df.fillna(0.)
+        mask = (df.values != 0.).astype('uint8')
+        return df, mask
 
