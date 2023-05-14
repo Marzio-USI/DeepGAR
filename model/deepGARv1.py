@@ -10,6 +10,7 @@ import torch.nn as nn
 from tsl.nn.layers import NodeEmbedding
 from tsl.nn.layers.multi.recurrent import MultiLSTMCell
 from utils import scaling
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class DeepGAR(BaseModelDeepGar):
@@ -145,3 +146,17 @@ class DeepGAR(BaseModelDeepGar):
         self.log("val_rmse", rmse / seq_length, logger=True, on_step=True, on_epoch=True, prog_bar=True,
                  batch_size=size_batch)
         self.log("val_loss", loss, batch_size=size_batch, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.01)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss",  # The metric to monitor for lr reduction
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }
+
