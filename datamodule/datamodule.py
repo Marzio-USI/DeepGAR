@@ -60,7 +60,9 @@ class DataModule:
             test_df = dataframe.iloc[-testing_part:]
             mask_test = self.dataset.mask[-testing_part:]
             assert test_df.shape[0] == testing_part
-            train_df, val_df = train_test_split(train_df, test_size=0.1, shuffle=False)
+            test_size = train_df.shape[0] / dataframe.shape[0]
+            val_size = 0.1 / test_size
+            train_df, val_df = train_test_split(train_df, test_size=val_size, shuffle=False)
             mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
             print(f'Train {train_df.shape}, val {val_df.shape}, test {test_df.shape}. ORIGINAL {dataframe.shape}')
         else:
