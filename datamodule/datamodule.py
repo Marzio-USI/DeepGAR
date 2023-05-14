@@ -54,7 +54,7 @@ class DataModule:
             layout="edge_index")
         dataframe = self.dataset.dataframe()
         if self.name == 'electric':
-            testing_part = 7 * 24
+            testing_part = 7 * 24 + (test_window)
             train_df = dataframe.iloc[:-testing_part]
             mask_train = self.dataset.mask[:-testing_part]
             test_df = dataframe.iloc[-testing_part:]
@@ -62,6 +62,7 @@ class DataModule:
             assert test_df.shape[0] == testing_part
             train_df, val_df = train_test_split(train_df, test_size=0.1, shuffle=False)
             mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
+            print(f'Train {train_df.shape}, val {val_df.shape}, test {test_df.shape}. ORIGINAL {dataframe.shape}')
         else:
             train_df, test_df = train_test_split(dataframe, test_size=self.test_size, shuffle=False)
             mask_train, mask_test = self.dataset.mask[:train_df.shape[0], ...], self.dataset.mask[train_df.shape[0]:, ...]
@@ -199,18 +200,19 @@ class CustomSpatioTemporalDataModule(SpatioTemporalDataModule):
                              "'train', 'val', or 'test'.")
         if dataset is None:
             return None
+        assert sampler is not None
         # pin_memory = self.pin_memory if split == 'train' else None
         return CustomStaticGraphLoader(dataset,
                                        batch_size=batch_size or self.batch_size,
                                        shuffle=shuffle,
-                                       drop_last=split == 'train',
+                                       drop_last=False,
                                        num_workers=self.workers,
                                        pin_memory=self.pin_memory,
                                        batch_sampler=BatchSampler(sampler, batch_size=batch_size,
-                                                                  drop_last=split == 'train')
+                                                                  drop_last=False)
                                        )
 
-    def train_dataloader_custom(self, shuffle: bool = True,
+    def train_dataloader_custom(self, shuffle: bool = False,
                                 batch_size: Optional[int] = None, sampler: WeightedSampler = None) \
             -> Optional[DataLoader]:
         """"""

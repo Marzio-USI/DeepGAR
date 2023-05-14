@@ -16,14 +16,13 @@ class DeepGAR(BaseModelDeepGar):
     def __init__(self, input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
-                 test_loss: str = "rmse_p",
                  perform_scaling: bool = False,
                  encoder_size=32,
                  embedding_size=32,
                  hidden_size_1=32,
                  hidden_size_2=32
                  ):
-        super().__init__(input_size, n_nodes, distribution, test_loss, perform_scaling)
+        super().__init__(input_size, n_nodes, distribution, perform_scaling)
         self.save_hyperparameters()
 
         self.encoder = nn.Linear(input_size, encoder_size)
