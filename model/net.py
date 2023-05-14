@@ -12,7 +12,6 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
                  input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
-                 test_loss: str = "rmse",
                  perform_scaling: bool = False
                  ):
         super(BaseModelDeepGar, self).__init__()
@@ -21,13 +20,7 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
         self.distribution = distribution
         self.perform_scaling = perform_scaling
         self.train_loss_fn = NLL(self.distribution)
-        if test_loss == 'rmse':
-            self.test_loss_fn = RMSE()
-        elif test_loss == 'mae':
-            self.test_loss_fn = MAE()
-        else:
-            print('using default rmse used in deep ar')
-            self.test_loss_fn = RMSE_paper()
+        self.test_loss_fn = RMSE_paper()
 
         self.distribution_sigma = nn.Softplus()
 
@@ -35,7 +28,7 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
         return self.train_loss_fn.forward(mu, sigma, target)
 
     def test_loss(self, y_pred, y_true):
-        return self.test_loss_fn.forward(y_pred, y_true)
+        return self.test_loss_fn.forward(y_pred, y_true, self.n_nodes)
 
     @abstractmethod
     def forward(self, x, *args, **kwargs):

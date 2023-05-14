@@ -14,10 +14,12 @@ class RMSE_paper(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, n_nodes):
         # pred and target have shape (8, 1)
-        nom = torch.sqrt(torch.mean((pred - target) ** 2))
-        return nom / torch.mean(torch.abs(target))
+
+        nom = torch.sqrt(torch.sum((target - pred)**2)/n_nodes)
+        denom = torch.sum(torch.abs(target))/ n_nodes 
+        return nom / denom
 
 
 class ND_paper(nn.Module):

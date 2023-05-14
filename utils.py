@@ -62,13 +62,17 @@ def decompose_results(res: list):
     return np.concatenate(flatten_mu, axis=-1), np.concatenate(flatten_sigma, axis=-1), np.concatenate(flatten_y,
                                                                                                        axis=-1)
 
-def get_metrics(res):
+def get_metrics(res, horizon, n_nodes):
     mus, sigmas, ys = decompose_results(res)
+    print(ys.shape)
+    print(mus.shape)
     ys = ys.squeeze(axis=0)
     mus = mus.squeeze(axis=0)
+    print(ys.shape)
+    print(mus.shape)
     assert ys.ndim == 2
     assert mus.ndim == 2
-    rmse_loss = rmse_paper(ys, mus)
+    rmse_loss = rmse_paper(ys, mus, horizon=horizon, n_nodes=n_nodes)
     nd_loss = nd(ys, mus)
     return rmse_loss, nd_loss
 
@@ -79,27 +83,28 @@ import matplotlib.pyplot as plt
 def rmse(y_true, y_pred):
     return np.sqrt(np.mean((y_true - y_pred) ** 2))
 
+def rmse_paper(y_true, y_pred, horizon, n_nodes):
+    a =  np.sqrt(np.sum((y_true - y_pred) **2) /(n_nodes * horizon))
+    b =  np.sum(np.abs(y_true)) / (n_nodes * horizon)
+    return a /b
+
 
 def nrmse(y_true, y_pred):
     return np.sqrt(np.mean((y_true - y_pred) ** 2)) / (np.max(y_true) - np.min(y_true))
-
-
-def rmse_paper(y_true, y_pred):
-    nom = np.sqrt(np.mean(y_true - y_pred) ** 2)
-    return nom / np.mean(np.abs(y_true))
 
 
 DATAFRAME_DIR = './results/'
 
 
 def add_metrics(name: str, rmse, nd):
-    file_path = DATAFRAME_DIR.join((name, '.csv'))
+    file_path = ''.join([DATAFRAME_DIR, name, '.csv'])
+    data = [[rmse, nd]]
     if not os.path.exists(file_path):
-        df_to_add = pd.DataFrame(data=[rmse, nd], columns=['RMSE', 'ND'])
+        df_to_add = pd.DataFrame(data=data, columns=['RMSE', 'ND'])
         df_to_add.to_csv(file_path)
         return 1
-    df = pd.read_csv(file_path)
-    df_to_add = pd.DataFrame(data=[rmse, nd], columns=['RMSE', 'ND'])
+    df = pd.read_csv(file_path, index_col=0)
+    df_to_add = pd.DataFrame(data=data, columns=['RMSE', 'ND'])
     df = pd.concat((df, df_to_add), ignore_index=True)
     df.to_csv(file_path)
     return df.shape[0]
@@ -118,37 +123,22 @@ def update_dataframe(name: str, res):
     return i
 
 
-def draw(res):
+def draw(res, horizon, n_nodes):
+    for i in range(n_nodes):
+        draw_single(res, i, horizon, n_nodes)
+
+
+
+def draw_single(res, i, horizon, n_nodes):
     mus, sigmas, ys = decompose_results(res)
-    n_plot = mus.shape[1]
-    for i in range(n_plot):
-        fig = plt.figure(i, figsize=(16, 8))
-        # rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
-        # nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
-        rmse_p = rmse_paper(ys[:, i, :].flatten(), mus[:, i, :].flatten())
-        plt.plot(mus[:, i, :].flatten(), label='Predicted values')
-        plt.plot(ys[:, i, :].flatten(), label='real values')
-        plt.legend()
-        plt.title(f'Prediction vs real value for time series {i}  RMSE (paper): {rmse_p}')
-        plt.show()
-
-    return
-
-
-def draw_single(res, i):
-    mus, sigmas, ys = decompose_results(res)
-    n_plot = mus.shape[1]
     fig = plt.figure(i, figsize=(16, 8))
-    # rmse_loss = rmse(ys[:, i, :].flatten(),mus[:, i, :].flatten())
-    # nrmse_loss = nrmse(ys[:, i, :].flatten(), mus[:, i, :].flatten())
-    rmse_p = rmse_paper(ys[:, i, :].flatten(), mus[:, i, :].flatten())
+    rmse_p = rmse_paper(ys[:, i, :], mus[:, i, :], horizon=horizon, n_nodes=1)
+    nrmse_loss = nrmse(ys[:, i, :], mus[:, i, :])
     plt.plot(mus[:, i, :].flatten(), label='Predicted values')
     plt.plot(ys[:, i, :].flatten(), label='real values')
     plt.legend()
-    plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p}')
+    plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p} and NRMSE : {nrmse_loss}')
     plt.show()
-
-    return
 
 
 from tsl.datasets.prototypes import DatetimeDataset
