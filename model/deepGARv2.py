@@ -4,32 +4,37 @@ import torch
 
 from distributions.distributions import Distribution
 from layers.graph_lstm_cell import GraphConvLSTMCell
+from layers.graph_gru_cell import GraphConvGRUCell
+from layers.GATConv import GATConv
 from model.net import BaseModelDeepGar
 import torch.nn as nn
 from tsl.nn.layers import NodeEmbedding
-from tsl.nn.layers.multi.recurrent import MultiLSTMCell
+from tsl.nn.layers.multi.recurrent import MultiLSTMCell, MultiGRUCell
 from utils import scaling
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+from torch_geometric.nn.conv.tag_conv import TAGConv
+from tsl.nn.layers.graph_convs.diff_conv import DiffConv
+from torch_geometric.nn.conv.gcn_conv import GCNConv
 
 class DeepGAR(BaseModelDeepGar):
     def __init__(self, input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
+                 test_loss: str = "rmse_p",
                  perform_scaling: bool = False,
                  encoder_size=32,
                  embedding_size=32,
                  hidden_size_1=32,
                  hidden_size_2=32
                  ):
-        super().__init__(input_size, n_nodes, distribution, perform_scaling)
+        super().__init__(input_size, n_nodes, distribution, test_loss, perform_scaling)
         self.save_hyperparameters()
 
         self.encoder = nn.Linear(input_size, encoder_size)
         self.node_embeddings = NodeEmbedding(self.n_nodes, embedding_size)
 
-        self.time = MultiLSTMCell(embedding_size, hidden_size_1, n_instances=self.n_nodes)
-        self.space_time = GraphConvLSTMCell(hidden_size_1, hidden_size_2, )
+        self.time = MultiGRUCell(embedding_size, hidden_size_1, n_instances=self.n_nodes)
+        self.space_time = GraphConvGRUCell(hidden_size_1, hidden_size_2)
+        self.space_time1 = GraphConvGRUCell(hidden_size_1, hidden_size_2)
 
         self.distribution_mu = nn.Linear(hidden_size_2, input_size)
         self.distribution_presigma = nn.Linear(hidden_size_2, input_size)
@@ -41,14 +46,15 @@ class DeepGAR(BaseModelDeepGar):
         x_enc = self.encoder(x)
         x_emb = x_enc + self.node_embeddings()
 
-        h, c = self.time(x_emb, hc)
-        h2, c2 = self.space_time(h, hc2, edge_index=edge_index, edge_weight=edge_weight)
+        h1 = self.time(x_emb, hc[0])
+        h2 = self.space_time(h1, hc2[0], edge_index=edge_index, edge_weight=edge_weight)
+        h3 = self.space_time1(h2, hc2[1], edge_index=edge_index, edge_weight=edge_weight)
 
-        sigma = self.distribution_presigma(h2)
-        mu = self.distribution_mu(h2)
+        sigma = self.distribution_presigma(h3)
+        mu = self.distribution_mu(h3)
         sigma_out = self.distribution_sigma(sigma)
 
-        return mu, sigma_out, (h, c), (h2, c2)
+        return mu, sigma_out, (h1, hc[1]), (h2, h3)
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
         x = batch["x"]
@@ -145,17 +151,6 @@ class DeepGAR(BaseModelDeepGar):
         self.log("val_rmse", rmse / seq_length, logger=True, on_step=True, on_epoch=True, prog_bar=True,
                  batch_size=size_batch)
         self.log("val_loss", loss, batch_size=size_batch, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-
+    
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.01)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val_loss",  # The metric to monitor for lr reduction
-                "interval": "epoch",
-                "frequency": 1,
-            },
-        }
-
+        return torch.optim.Adam(self.parameters(), lr=0.01)

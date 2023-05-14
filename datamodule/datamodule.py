@@ -20,6 +20,8 @@ from tsl.datasets.prototypes import DatetimeDataset
 import tsl
 import os
 import pandas as pd
+from tsl.ops.connectivity import adj_to_edge_index
+
 class DataModule:
     def __init__(self, name, train_val_test_split: tuple[float, float, float] | None, batch_size:int=32):
         if name == 'electric':
@@ -45,13 +47,15 @@ class DataModule:
         self.val_dataset = None
 
     def generate_train_test_dataset(self, window=24, test_window=24, test_horizon=4, test_stride=4, test_delay=0):
-        connectivity = self.dataset.get_connectivity(
-            method='full',
-            threshold=0.1,
-            include_self=False,
-            normalize_axis=1,
-            knn=4,
-            layout="edge_index")
+        # connectivity = self.dataset.get_connectivity(
+        #     method='full',
+        #     threshold=0.1,
+        #     include_self=False,
+        #     normalize_axis=1,
+        #     knn=4,
+        #     layout="edge_index")
+        connectivity = self.dataset.dataframe().corr().values
+        connectivity = adj_to_edge_index(connectivity)
         dataframe = self.dataset.dataframe()
         if self.name == 'electric':
             testing_part = 7 * 24 + (test_window)

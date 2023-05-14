@@ -85,7 +85,7 @@ class DataModule:
             dataset=self.test_dataset,
             scalers=None,
             batch_size=1,
-            workers=8
+            workers=4
         )
         dm_test.setup()
         return dm_test.get_dataloader(shuffle=False)
