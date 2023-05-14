@@ -3,8 +3,7 @@ from typing import Any
 import torch
 
 from distributions.distributions import Distribution
-from tsl.nn.layers.recurrent.gcrnn import GraphConvLSTMCell as DenseGraphConvLSTMCell
-# from layers_fixed.our_layers import DenseGraphConvLSTMCell
+from layers.graph_lstm_cell import GraphConvLSTMCell
 from model.net import BaseModelDeepGar
 import torch.nn as nn
 from tsl.nn.layers import NodeEmbedding
@@ -30,7 +29,7 @@ class DeepGAR(BaseModelDeepGar):
         self.node_embeddings = NodeEmbedding(self.n_nodes, embedding_size)
 
         self.time = MultiLSTMCell(embedding_size, hidden_size_1, n_instances=self.n_nodes)
-        self.space_time = DenseGraphConvLSTMCell(hidden_size_1, hidden_size_2)
+        self.space_time = GraphConvLSTMCell(hidden_size_1, hidden_size_2, )
 
         self.distribution_mu = nn.Linear(hidden_size_2, input_size)
         self.distribution_presigma = nn.Linear(hidden_size_2, input_size)
