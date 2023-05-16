@@ -140,10 +140,10 @@ def draw_single(res, i, horizon, n_nodes):
     mus, sigmas, ys = decompose_results(res)
     fig = plt.figure(i, figsize=(16, 8))
     rmse_p = rmse_paper(ys[:, i, :], mus[:, i, :], horizon=horizon, n_nodes=1)
-    nrmse_loss = nrmse(ys[:, i, :], mus[:, i, :])
+    nd_loss = nd(ys[:, i, :], mus[:, i, :])
     plt.plot(mus[:, i, :].flatten(), label='Predicted values')
     plt.plot(ys[:, i, :].flatten(), label='real values')
     plt.legend()
-    plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p} and NRMSE : {nrmse_loss}')
+    plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p} and ND : {nd_loss}')
     plt.show()
 

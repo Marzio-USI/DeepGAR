@@ -23,16 +23,17 @@ class DeepGAR(BaseModelDeepGar):
                  encoder_size=32,
                  embedding_size=32,
                  hidden_size_1=32,
-                 hidden_size_2=32
+                 hidden_size_2=32,
+                 learning_rate = 0.01
                  ):
-        super().__init__(input_size, n_nodes, distribution, perform_scaling)
+        super().__init__(input_size, n_nodes, distribution, perform_scaling, learning_rate= learning_rate)
         self.save_hyperparameters()
 
         self.encoder = nn.Linear(input_size, encoder_size)
         self.node_embeddings = NodeEmbedding(self.n_nodes, embedding_size)
 
         self.time = MultiGRUCell(embedding_size, hidden_size_1, n_instances=self.n_nodes)
-        self.space_time = GraphConvGRUCell(hidden_size_1, hidden_size_2)
+        self.space_time = GraphConvGRUCell(hidden_size_1, hidden_size_1)
         self.space_time1 = GraphConvGRUCell(hidden_size_1, hidden_size_2)
 
         self.distribution_mu = nn.Linear(hidden_size_2, input_size)
@@ -152,13 +153,13 @@ class DeepGAR(BaseModelDeepGar):
         self.log("val_loss", loss, batch_size=size_batch, on_step=True, on_epoch=True, prog_bar=True, logger=True)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.01)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "monitor": "val_loss",  # The metric to monitor for lr reduction
+                "monitor": "val_loss", 
                 "interval": "epoch",
                 "frequency": 1,
             },

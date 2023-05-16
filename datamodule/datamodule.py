@@ -47,26 +47,26 @@ class DataModule:
         self.val_dataset = None
 
     def generate_train_test_dataset(self, window=24, test_window=24, test_horizon=4, test_stride=4, test_delay=0):
-        # connectivity = self.dataset.get_connectivity(
-        #     method='full',
-        #     threshold=0.1,
-        #     include_self=False,
-        #     normalize_axis=1,
-        #     knn=4,
-        #     layout="edge_index")
+        
         connectivity = self.dataset.dataframe().corr().values
         connectivity = adj_to_edge_index(connectivity)
         dataframe = self.dataset.dataframe()
         if self.name == 'electric':
+            connectivity = self.dataset.get_connectivity(
+            method='full',
+            threshold=0.1,
+            include_self=False,
+            normalize_axis=1,
+            knn=4,
+            layout="edge_index"
+            )
             testing_part = 7 * 24 + (test_window)
             train_df = dataframe.iloc[:-testing_part]
             mask_train = self.dataset.mask[:-testing_part]
             test_df = dataframe.iloc[-testing_part:]
             mask_test = self.dataset.mask[-testing_part:]
             assert test_df.shape[0] == testing_part
-            test_size = train_df.shape[0] / dataframe.shape[0]
-            val_size = 0.1 / test_size
-            train_df, val_df = train_test_split(train_df, test_size=val_size, shuffle=False)
+            train_df, val_df = train_test_split(train_df, test_size=0.11, shuffle=False)
             mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
             print(f'Train {train_df.shape}, val {val_df.shape}, test {test_df.shape}. ORIGINAL {dataframe.shape}')
         else:
@@ -75,6 +75,7 @@ class DataModule:
             self.val_size /= self.train_size
             train_df, val_df = train_test_split(train_df, test_size=self.val_size, shuffle=False)
             mask_train, mask_val = mask_train[:train_df.shape[0], ...], mask_train[train_df.shape[0]:, ...]
+            print(f'Train {train_df.shape}, val {val_df.shape}, test {test_df.shape}. ORIGINAL {dataframe.shape}')
 
         assert dataframe.shape[0] == (train_df.shape[0] + val_df.shape[0] + test_df.shape[0]), f'Splitting failed'
 

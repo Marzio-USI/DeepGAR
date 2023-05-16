@@ -12,9 +12,11 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
                  input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
-                 perform_scaling: bool = False
+                 perform_scaling: bool = False,
+                 learning_rate = 0.01
                  ):
         super(BaseModelDeepGar, self).__init__()
+        self.learning_rate = learning_rate
         self.input_size = input_size
         self.n_nodes = n_nodes
         self.distribution = distribution
@@ -51,4 +53,4 @@ class BaseModelDeepGar(pl.LightningModule, ABC):
         pass
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters())
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
