@@ -95,8 +95,15 @@ def nrmse(y_true, y_pred):
 
 DATAFRAME_DIR = './results/'
 
+# def get_k_best(res, n_nodes):
+#     mus, sigmas, ys = decompose_results(res)
+#     bests = []
+#     for i in range(n_nodes)
+
 
 def add_metrics(name: str, rmse, nd):
+    if not os.path.exists(DATAFRAME_DIR):
+        os.mkdir(DATAFRAME_DIR)
     file_path = ''.join([DATAFRAME_DIR, name, '.csv'])
     data = [[rmse, nd]]
     if not os.path.exists(file_path):
@@ -140,7 +147,3 @@ def draw_single(res, i, horizon, n_nodes):
     plt.title(f'Prediction vs real value for time series {i}   RMSE (paper): {rmse_p} and NRMSE : {nrmse_loss}')
     plt.show()
 
-
-from tsl.datasets.prototypes import DatetimeDataset
-def compute_electric(dataset: DatetimeDataset):
-    dataframe = dataset.dataframe()

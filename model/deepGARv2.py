@@ -14,19 +14,18 @@ from utils import scaling
 from torch_geometric.nn.conv.tag_conv import TAGConv
 from tsl.nn.layers.graph_convs.diff_conv import DiffConv
 from torch_geometric.nn.conv.gcn_conv import GCNConv
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 class DeepGAR(BaseModelDeepGar):
     def __init__(self, input_size: int,
                  n_nodes: int,
                  distribution: Distribution,
-                 test_loss: str = "rmse_p",
                  perform_scaling: bool = False,
                  encoder_size=32,
                  embedding_size=32,
                  hidden_size_1=32,
                  hidden_size_2=32
                  ):
-        super().__init__(input_size, n_nodes, distribution, test_loss, perform_scaling)
+        super().__init__(input_size, n_nodes, distribution, perform_scaling)
         self.save_hyperparameters()
 
         self.encoder = nn.Linear(input_size, encoder_size)
@@ -153,4 +152,14 @@ class DeepGAR(BaseModelDeepGar):
         self.log("val_loss", loss, batch_size=size_batch, on_step=True, on_epoch=True, prog_bar=True, logger=True)
     
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.01)
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.01)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss",  # The metric to monitor for lr reduction
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }
