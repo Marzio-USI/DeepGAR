@@ -53,7 +53,7 @@ class DataModule:
         dataframe = self.dataset.dataframe()
         if self.name == 'electric':
             connectivity = self.dataset.get_connectivity(
-            method='full',
+            method='correntropy',
             threshold=0.1,
             include_self=False,
             normalize_axis=1,
