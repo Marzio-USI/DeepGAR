@@ -292,3 +292,5 @@ cython_debug/
 data
 data/elergone.h5
 data/*
+electricity_logs*
+lightning_logs*
