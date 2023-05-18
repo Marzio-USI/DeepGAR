@@ -1,9 +1,0 @@
-distribution: !!python/object:distributions.distributions.GaussianDistribution {}
-embedding_size: 32
-encoder_size: 32
-hidden_size_1: 32
-hidden_size_2: 32
-input_size: 1
-learning_rate: 0.01
-n_nodes: 370
-perform_scaling: false
