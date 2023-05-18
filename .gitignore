@@ -292,5 +292,14 @@ cython_debug/
 data
 data/elergone.h5
 data/*
-electricity_logs*
+elec_copy
+electricity_logs_0
+electricity_logs_1
+electricity_logs_2
+electricity_logs_v2_0
+electricity_logs_v2_1
+electricity_logs_v2_2
+exchange_logs
+lightning_logs
+logs
 lightning_logs*
