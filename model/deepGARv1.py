@@ -166,7 +166,7 @@ class DeepGAR(BaseModelDeepGar):
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=25, verbose=True, min_lr=5e-4)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {

@@ -179,6 +179,7 @@ class WeightedSampler(Sampler):
         self.num_samples = weights.shape[0]
         self.replacement = True
         self.validate_weights()
+            
 
     def validate_weights(self):
         if torch.sum(self.weights) > 1:

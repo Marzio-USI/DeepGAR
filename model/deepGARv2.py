@@ -24,7 +24,7 @@ class DeepGAR(BaseModelDeepGar):
                  embedding_size=32,
                  hidden_size_1=32,
                  hidden_size_2=32,
-                 learning_rate = 0.01
+                 learning_rate = 0.003
                  ):
         super().__init__(input_size, n_nodes, distribution, perform_scaling, learning_rate= learning_rate)
         self.save_hyperparameters()
@@ -80,7 +80,7 @@ class DeepGAR(BaseModelDeepGar):
                                        y[:, i])
             rmse += self.test_loss(mu * torch.squeeze(scale, 1), y[:, i])
         loss = loss / seq_length
-        self.log("rmse", rmse / seq_length, logger=True, on_step=True, on_epoch=True, prog_bar=True,
+        self.log("rmse", rmse / seq_length, logger=True, on_step=True, on_epoch=True, prog_bar=False,
                  batch_size=size_batch)
         return loss
 
@@ -148,13 +148,13 @@ class DeepGAR(BaseModelDeepGar):
                                        y[:, i])
             rmse += self.test_loss(mu * torch.squeeze(scale, 1), y[:, i])
         loss = loss / seq_length
-        self.log("val_rmse", rmse / seq_length, logger=True, on_step=True, on_epoch=True, prog_bar=True,
+        self.log("val_rmse", rmse / seq_length, logger=True, on_step=False, on_epoch=True, prog_bar=True,
                  batch_size=size_batch)
-        self.log("val_loss", loss, batch_size=size_batch, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("val_loss", loss, batch_size=size_batch, on_step=False, on_epoch=True, prog_bar=True, logger=True)
     
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-5)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=25, verbose=True, min_lr=5e-4)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
